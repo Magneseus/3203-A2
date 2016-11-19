@@ -58,7 +58,14 @@ void ofApp::update() {
 	// Update the simulation if it's currently running
 	if (runningSim)
 	{
-		
+		// TESTING
+		for (auto it = sensors.begin(); it != sensors.end(); ++it)
+		{
+			(*it) += sensorSpeed * deltaTime;
+			if ((*it) > 1.0f)
+				(*it) -= 1.0f;
+		}
+		// END TESTING
 	}
 }
 
@@ -103,6 +110,44 @@ ofPoint ofApp::lineInterp(float val)
 
 	return retPoint;
 }
+
+// Refreshes the simulation by returning all sensors to their original positions
+// and starting the algorithm for placement anew
+void ofApp::refreshSensors()
+{
+	// Go through the current number of sensors, copying the old values to the
+	// new value
+	int i = 0;
+	for (auto it = sensors.begin(), it1 = initialSensors.begin(); 
+		it != sensors.end() && it1 != initialSensors.end() && i < sensorNum;
+		++it, ++it1, ++i)
+	{
+		(*it) = (*it1);
+	}
+}
+
+// Creates a new set of sensors, and refreshes the simulation
+void ofApp::resetSensors()
+{
+	// Clear all existing sensors
+	sensors.clear();
+
+	// Initialize a new set of random sensors
+	for (int i = 0; i < sensorNum; i++)
+	{
+		sensors.push_back(ofRandom(0.0f, 1.0f));
+	}
+
+	// New set of initial sensors
+	initialSensors = sensors;
+
+	// Finally refresh the simulation
+	refreshSensors();
+}
+
+
+
+/* EVENT LISTENERS */
 
 // Alter the sensor num based on the change in the sensorNum bar
 void ofApp::sensorNumChanged(int &newSensorNum)
@@ -159,40 +204,6 @@ void ofApp::sensorRangeChanged(float &newSensorRange)
 void ofApp::toggleRunSim(bool &newRunSim)
 {
 	runningSim = newRunSim;
-}
-
-// Refreshes the simulation by returning all sensors to their original positions
-// and starting the algorithm for placement anew
-void ofApp::refreshSensors()
-{
-	// Go through the current number of sensors, copying the old values to the
-	// new value
-	int i = 0;
-	for (auto it = sensors.begin(), it1 = initialSensors.begin(); 
-		it != sensors.end() && it1 != initialSensors.end() && i < sensorNum;
-		++it, ++it1, ++i)
-	{
-		(*it) = (*it1);
-	}
-}
-
-// Creates a new set of sensors, and refreshes the simulation
-void ofApp::resetSensors()
-{
-	// Clear all existing sensors
-	sensors.clear();
-
-	// Initialize a new set of random sensors
-	for (int i = 0; i < sensorNum; i++)
-	{
-		sensors.push_back(ofRandom(0.0f, 1.0f));
-	}
-
-	// New set of initial sensors
-	initialSensors = sensors;
-
-	// Finally refresh the simulation
-	refreshSensors();
 }
 
 
