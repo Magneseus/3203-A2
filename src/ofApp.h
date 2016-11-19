@@ -26,9 +26,12 @@ public:
 	// Called when the sensor num value is changed (to alter the number of sensors)
 	void sensorNumChanged(int &newSensorNum);
 
+	// Called when the refresh button is hit
+	void refreshSensorsClicked();
+
 private:
 	ofPoint mousePos;
-	ofxPanel gui;
+	ofxGuiGroup gui;
 
 	int wWidth = 800;
 	int wHeight = 600;

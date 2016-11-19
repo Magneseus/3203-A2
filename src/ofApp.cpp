@@ -5,21 +5,31 @@ void ofApp::setup() {
 	gui.setup();
 	ofEnableAntiAliasing();
 
-	// Setup sensor values
+	ofParameterGroup simParams;
+	simParams.setName("Simulation Parameters");
+
+	// Setup the default parameter values
 	sensorSpeed.set("Speed", 0.2f, 0.0f, 1.0f);
 	sensorNum.set("Number of Sensors", 5, 0, 100);
 	oldSensorNum = 5;
 	sensorRange.set("Range", 0.1f, 0.0f, 1.0f);
 
-	// Add all the mutable values to the gui
-	gui.add(sensorNum);
-	gui.add(sensorRange);
-	gui.add(sensorSpeed);
-
+	// Setup event listeners for the panel
 	sensorSpeed.disableEvents();
 	sensorRange.disableEvents();
 	sensorNum.addListener(this, &ofApp::sensorNumChanged);
+
+	// Setup the refresh button for the sim
+	ofxButton* refreshSensors = new ofxButton();
+	refreshSensors->setup("Refresh");
+	refreshSensors->addListener(this, &ofApp::refreshSensorsClicked);
 	
+	// Add all GUI elements to the main GUI group
+	simParams.add(sensorNum);
+	simParams.add(sensorRange);
+	simParams.add(sensorSpeed);
+	gui.add(simParams);
+	gui.add(refreshSensors);
 
 	for (int i = 0; i < 10; i++)
 	{
@@ -92,6 +102,12 @@ void ofApp::sensorNumChanged(int &newSensorNum)
 	}
 
 	oldSensorNum = newSensorNum;
+}
+
+// Listener for the Refresh button
+void ofApp::refreshSensorsClicked()
+{
+	std::cout << "test\n";
 }
 
 //--------------------------------------------------------------
