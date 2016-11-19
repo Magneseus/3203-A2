@@ -8,12 +8,23 @@ void ofApp::setup() {
 	// Setup sensor values
 	sensorSpeed.set("Speed", 0.2f, 0.0f, 1.0f);
 	sensorNum.set("Number of Sensors", 5, 0, 100);
+	oldSensorNum = 5;
 	sensorRange.set("Range", 0.1f, 0.0f, 1.0f);
 
 	// Add all the mutable values to the gui
 	gui.add(sensorNum);
 	gui.add(sensorRange);
 	gui.add(sensorSpeed);
+
+	sensorSpeed.disableEvents();
+	sensorRange.disableEvents();
+	sensorNum.addListener(this, &ofApp::sensorNumChanged);
+	
+
+	for (int i = 0; i < 10; i++)
+	{
+		sensors.push_back(ofRandom(0.0f, 1.0f));
+	}
 }
 
 //--------------------------------------------------------------
@@ -21,15 +32,66 @@ void ofApp::update() {
 	// Update the time variables
 	deltaTime = ofGetLastFrameTime() - timeSinceStart;
 	timeSinceStart = ofGetElapsedTimef();
-
-
 }
 
 //--------------------------------------------------------------
 void ofApp::draw() {
-	ofSetColor(ofColor::indianRed, 255);
+	// Calculate the size of the range, according to the line
+	float _range = (lineInterp(1.0f)).x - (lineInterp(0.0f)).x;
+	_range *= sensorRange;
+
+	// Draw all sensors
+	for (auto it = sensors.begin(); it != sensors.end(); ++it)
+	{
+		// Draw the range of the sensors
+		ofSetColor(ofColor::indianRed, 100);
+		ofDrawEllipse(lineInterp((*it)), _range, _range);
+	}
+	for (auto it = sensors.begin(); it != sensors.end(); ++it)
+	{
+		// Draw the point on the line for the sensor
+		ofSetColor(ofColor::antiqueWhite, 255);
+		ofDrawEllipse(lineInterp((*it)), 10.f, 10.f);
+	}
+
+	// Draw the sensor line
+	ofSetColor(ofColor::antiqueWhite, 255);
+	ofSetLineWidth(3);
+	ofDrawLine(lineInterp(0.0f), lineInterp(1.0f));
 
 	gui.draw();
+}
+
+// Custom functions
+
+// Returns a point on the visual line, given a value upon that line (0-1)
+ofPoint ofApp::lineInterp(float val)
+{
+	ofPoint retPoint;
+	float lineVal = 1.0f / 6.0f;
+
+	retPoint.x = (wWidth * lineVal) + (val * (wWidth - (wWidth * 2.0f * lineVal)));
+	retPoint.y = wHeight / 2.0f;
+
+	return retPoint;
+}
+
+// Alter the sensors based on the change
+void ofApp::sensorNumChanged(int &newSensorNum)
+{
+	// Add a new sensor
+	if (oldSensorNum < newSensorNum)
+	{
+		sensors.push_back(ofRandom(0.0f, 1.0f));
+	}
+	// Remove the latest sensor
+	else if (oldSensorNum > newSensorNum)
+	{
+		if (sensors.size() > 0)
+			sensors.pop_back();
+	}
+
+	oldSensorNum = newSensorNum;
 }
 
 //--------------------------------------------------------------
