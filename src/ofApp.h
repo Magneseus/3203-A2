@@ -28,6 +28,8 @@ public:
 	void sensorNumChanged(int &newSensorNum);
 	// Called when the range of the sensors is changed
 	void sensorRangeChanged(float &newSensorRange);
+	// Called when the toggle button for runSim is changed
+	void toggleRunSim(bool &newRunSim);
 
 	// Refreshes the simulation
 	void refreshSensors();
@@ -37,6 +39,8 @@ public:
 private:
 	ofPoint mousePos;
 	ofxGuiGroup gui;
+	ofxToggle runSim;
+	bool runningSim;
 
 	// Current window width and height
 	int wWidth = 800;

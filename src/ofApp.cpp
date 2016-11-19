@@ -30,6 +30,11 @@ void ofApp::setup() {
 	resetSensorsButton->setup("Reset");
 	resetSensorsButton->addListener(this, &ofApp::resetSensors);
 
+	// Setup the Run button for the simulation
+	runSim.setup("Run Simulation", false);
+	runSim.addListener(this, &ofApp::toggleRunSim);
+	runningSim = false;
+
 	// Add all GUI elements to the main GUI group
 	simParams.add(sensorNum);
 	simParams.add(sensorRange);
@@ -37,6 +42,7 @@ void ofApp::setup() {
 	gui.add(simParams);
 	gui.add(refreshSensorsButton);
 	gui.add(resetSensorsButton);
+	gui.add(&runSim);
 
 
 	// Finally, initialize the first set of random sensors
@@ -46,8 +52,14 @@ void ofApp::setup() {
 //--------------------------------------------------------------
 void ofApp::update() {
 	// Update the time variables
-	deltaTime = ofGetLastFrameTime() - timeSinceStart;
+	deltaTime = ofGetElapsedTimef() - timeSinceStart;
 	timeSinceStart = ofGetElapsedTimef();
+
+	// Update the simulation if it's currently running
+	if (runningSim)
+	{
+		
+	}
 }
 
 //--------------------------------------------------------------
@@ -92,19 +104,23 @@ ofPoint ofApp::lineInterp(float val)
 	return retPoint;
 }
 
-// Alter the sensors based on the change
+// Alter the sensor num based on the change in the sensorNum bar
 void ofApp::sensorNumChanged(int &newSensorNum)
 {
 	// Add a new sensor
 	if (oldSensorNum < newSensorNum)
 	{
-		// New sensor value
-		float newSensorValue = ofRandom(0.0f, 1.0f);
+		// Add as many sensors as required
+		for (int i = 0; i < newSensorNum - oldSensorNum; ++i)
+		{
+			// New sensor value
+			float newSensorValue = ofRandom(0.0f, 1.0f);
 
-		// Add a new sensor to the current sensor list
-		sensors.push_back(newSensorValue);
-		// Add a new sensor to the initial sensor list
-		initialSensors.push_back(newSensorValue);
+			// Add a new sensor to the current sensor list
+			sensors.push_back(newSensorValue);
+			// Add a new sensor to the initial sensor list
+			initialSensors.push_back(newSensorValue);
+		}
 
 		// Refresh the simulation as the parameters have changed
 		refreshSensors();
@@ -112,12 +128,16 @@ void ofApp::sensorNumChanged(int &newSensorNum)
 	// Remove the latest sensor
 	else if (oldSensorNum > newSensorNum)
 	{
-		// Remove the sensor from the current sensor list
-		if (sensors.size() > 0)
-			sensors.pop_back();
-		// Remove the sensor from the initial sensor list
-		if (initialSensors.size() > 0)
-			initialSensors.pop_back();
+		// Remove as many sensors as required
+		for (int i = 0; i < oldSensorNum - newSensorNum; ++i)
+		{
+			// Remove the sensor from the current sensor list
+			if (sensors.size() > 0)
+				sensors.pop_back();
+			// Remove the sensor from the initial sensor list
+			if (initialSensors.size() > 0)
+				initialSensors.pop_back();
+		}
 
 		// Refresh the simulation as the parameters have changed
 		refreshSensors();
@@ -126,6 +146,7 @@ void ofApp::sensorNumChanged(int &newSensorNum)
 	oldSensorNum = newSensorNum;
 }
 
+// Listener for the sensor range bar
 void ofApp::sensorRangeChanged(float &newSensorRange)
 {
 	if (oldSensorRange != newSensorRange)
@@ -134,11 +155,25 @@ void ofApp::sensorRangeChanged(float &newSensorRange)
 	oldSensorRange = newSensorRange;
 }
 
+// Called when the toggle button for runSim is changed
+void ofApp::toggleRunSim(bool &newRunSim)
+{
+	runningSim = newRunSim;
+}
+
 // Refreshes the simulation by returning all sensors to their original positions
 // and starting the algorithm for placement anew
 void ofApp::refreshSensors()
 {
-	
+	// Go through the current number of sensors, copying the old values to the
+	// new value
+	int i = 0;
+	for (auto it = sensors.begin(), it1 = initialSensors.begin(); 
+		it != sensors.end() && it1 != initialSensors.end() && i < sensorNum;
+		++it, ++it1, ++i)
+	{
+		(*it) = (*it1);
+	}
 }
 
 // Creates a new set of sensors, and refreshes the simulation
