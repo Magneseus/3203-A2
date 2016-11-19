@@ -11,30 +11,36 @@ void ofApp::setup() {
 	// Setup the default parameter values
 	sensorSpeed.set("Speed", 0.2f, 0.0f, 1.0f);
 	sensorNum.set("Number of Sensors", 5, 0, 100);
-	oldSensorNum = 5;
+	oldSensorNum = sensorNum.get();
 	sensorRange.set("Range", 0.1f, 0.0f, 1.0f);
+	oldSensorRange = sensorRange.get();
 
 	// Setup event listeners for the panel
 	sensorSpeed.disableEvents();
-	sensorRange.disableEvents();
+	sensorRange.addListener(this, &ofApp::sensorRangeChanged);
 	sensorNum.addListener(this, &ofApp::sensorNumChanged);
 
-	// Setup the refresh button for the sim
-	ofxButton* refreshSensors = new ofxButton();
-	refreshSensors->setup("Refresh");
-	refreshSensors->addListener(this, &ofApp::refreshSensorsClicked);
+	// Setup the refresh button for the simulation
+	ofxButton* refreshSensorsButton = new ofxButton();
+	refreshSensorsButton->setup("Refresh");
+	refreshSensorsButton->addListener(this, &ofApp::refreshSensors);
 	
+	// Setup the reset button for the simulation
+	ofxButton* resetSensorsButton = new ofxButton();
+	resetSensorsButton->setup("Reset");
+	resetSensorsButton->addListener(this, &ofApp::resetSensors);
+
 	// Add all GUI elements to the main GUI group
 	simParams.add(sensorNum);
 	simParams.add(sensorRange);
 	simParams.add(sensorSpeed);
 	gui.add(simParams);
-	gui.add(refreshSensors);
+	gui.add(refreshSensorsButton);
+	gui.add(resetSensorsButton);
 
-	for (int i = 0; i < 10; i++)
-	{
-		sensors.push_back(ofRandom(0.0f, 1.0f));
-	}
+
+	// Finally, initialize the first set of random sensors
+	resetSensors();
 }
 
 //--------------------------------------------------------------
@@ -48,7 +54,7 @@ void ofApp::update() {
 void ofApp::draw() {
 	// Calculate the size of the range, according to the line
 	float _range = (lineInterp(1.0f)).x - (lineInterp(0.0f)).x;
-	_range *= sensorRange;
+	_range *= sensorRange.get();
 
 	// Draw all sensors
 	for (auto it = sensors.begin(); it != sensors.end(); ++it)
@@ -72,7 +78,7 @@ void ofApp::draw() {
 	gui.draw();
 }
 
-// Custom functions
+/* Custom functions */
 
 // Returns a point on the visual line, given a value upon that line (0-1)
 ofPoint ofApp::lineInterp(float val)
@@ -92,24 +98,72 @@ void ofApp::sensorNumChanged(int &newSensorNum)
 	// Add a new sensor
 	if (oldSensorNum < newSensorNum)
 	{
-		sensors.push_back(ofRandom(0.0f, 1.0f));
+		// New sensor value
+		float newSensorValue = ofRandom(0.0f, 1.0f);
+
+		// Add a new sensor to the current sensor list
+		sensors.push_back(newSensorValue);
+		// Add a new sensor to the initial sensor list
+		initialSensors.push_back(newSensorValue);
+
+		// Refresh the simulation as the parameters have changed
+		refreshSensors();
 	}
 	// Remove the latest sensor
 	else if (oldSensorNum > newSensorNum)
 	{
+		// Remove the sensor from the current sensor list
 		if (sensors.size() > 0)
 			sensors.pop_back();
+		// Remove the sensor from the initial sensor list
+		if (initialSensors.size() > 0)
+			initialSensors.pop_back();
+
+		// Refresh the simulation as the parameters have changed
+		refreshSensors();
 	}
 
 	oldSensorNum = newSensorNum;
 }
 
-// Listener for the Refresh button
-void ofApp::refreshSensorsClicked()
+void ofApp::sensorRangeChanged(float &newSensorRange)
 {
-	std::cout << "test\n";
+	if (oldSensorRange != newSensorRange)
+		refreshSensors();
+
+	oldSensorRange = newSensorRange;
 }
 
+// Refreshes the simulation by returning all sensors to their original positions
+// and starting the algorithm for placement anew
+void ofApp::refreshSensors()
+{
+	
+}
+
+// Creates a new set of sensors, and refreshes the simulation
+void ofApp::resetSensors()
+{
+	// Clear all existing sensors
+	sensors.clear();
+
+	// Initialize a new set of random sensors
+	for (int i = 0; i < sensorNum; i++)
+	{
+		sensors.push_back(ofRandom(0.0f, 1.0f));
+	}
+
+	// New set of initial sensors
+	initialSensors = sensors;
+
+	// Finally refresh the simulation
+	refreshSensors();
+}
+
+
+
+
+/* More generated functions */
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
 
