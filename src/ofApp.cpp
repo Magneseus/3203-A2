@@ -44,6 +44,8 @@ void ofApp::setup() {
 	gui.add(resetSensorsButton);
 	gui.add(&runSim);
 
+	// Change the background colour
+	ofBackground(ofColor::darkSlateGrey);
 
 	// Finally, initialize the first set of random sensors
 	resetSensors();
@@ -58,15 +60,83 @@ void ofApp::update() {
 	// Update the simulation if it's currently running
 	if (runningSim)
 	{
-		// TESTING
-		for (auto it = sensors.begin(); it != sensors.end(); ++it)
+		int numSensors = sensors.size();
+		if (numSensors * sensorRange.get() > 1.0f && curScanInd < numSensors)
 		{
-			(*it) += sensorSpeed * deltaTime;
-			if ((*it) > 1.0f)
-				(*it) -= 1.0f;
+			/* Simple coverage */
+
+			// Move the current scan position forwards until it reaches a node
+			curScan += sensorSpeed * deltaTime;
+			auto iter = sensors.begin();
+			std::advance(iter, curScanInd);
+
+			// If we've moved past the sensor, go to that sensor
+			if (curScan > *iter)
+			{
+				// Set the value to the sensor
+				curScan = *iter;
+
+				// Check if we have a gap behind us
+				float prevSensorRangeExtent = curScanInd > 0 ?
+					sensors.at(curScanInd - 1) : 0.0f - sensorRange.get()/2.0f;
+				// Or in front of us
+				float nextSensorRangeExtent = curScanInd + 1 < sensors.size() ?
+					sensors.at(curScanInd + 1) : 1.0f + sensorRange.get()/2.0f;
+
+
+				// If gap behind, move the sensor backwards
+				if (curScan - prevSensorRangeExtent > sensorRange.get())
+				{
+					(*iter) -= sensorSpeed * deltaTime;
+
+					// If we've moved far enough, stop moving and set the
+					// finishedScan marker to here
+					if ((*iter) < prevSensorRangeExtent + sensorRange.get())
+					{
+						(*iter) = prevSensorRangeExtent + sensorRange.get();
+						finishedScan = (*iter);
+						finishedScanInd = curScanInd;
+						curScanInd++;
+					}
+
+					curScan = (*iter);
+				}
+				// If gap ahead, move the sensor forwards
+				else if (nextSensorRangeExtent - curScan > sensorRange.get())
+				{
+					(*iter) += sensorSpeed * deltaTime;
+
+					// If we've moved too far, then switch to the next node
+					// and set the finishedScan marker to here
+					if ((*iter) > prevSensorRangeExtent + sensorRange.get())
+					{
+						(*iter) = prevSensorRangeExtent + sensorRange.get();
+						finishedScan = (*iter);
+						finishedScanInd = curScanInd;
+						curScanInd++;
+					}
+
+					// If we've moved far enough, stop moving and set the
+					// finishedScan marker to here
+					if ((*iter) > nextSensorRangeExtent - sensorRange.get())
+					{
+						(*iter) = nextSensorRangeExtent - sensorRange.get();
+						finishedScan = (*iter);
+						finishedScanInd = curScanInd;
+						curScanInd++;
+					}
+
+					curScan = (*iter);
+				}
+				else
+				{
+					finishedScan = curScan;
+					finishedScanInd = curScanInd;
+					curScanInd++;
+				}
+			}
 		}
-		// END TESTING
-	}
+	} // End of if (runningSim)
 }
 
 //--------------------------------------------------------------
@@ -74,6 +144,17 @@ void ofApp::draw() {
 	// Calculate the size of the range, according to the line
 	float _range = (lineInterp(1.0f)).x - (lineInterp(0.0f)).x;
 	_range *= sensorRange.get();
+	
+	//Draw the scan sections
+	float y = (wHeight / 2.0f) - _range - (_range / 10.0f);
+	float h = (wHeight / 2.0f) + _range + (_range / 10.0f);
+
+	ofSetColor(ofColor::forestGreen, 50);
+	drawBoxCorners(0.0f, y, lineInterp(finishedScan).x, h);
+	ofSetColor(ofColor::darkSlateBlue, 50);
+	drawBoxCorners(lineInterp(finishedScan).x, y, lineInterp(curScan).x, h);
+	//ofSetColor(ofColor::darkRed, 50);
+	//drawBoxCorners(lineInterp(curScan).x, y, wWidth, h);
 
 	// Draw all sensors
 	for (auto it = sensors.begin(); it != sensors.end(); ++it)
@@ -124,6 +205,15 @@ void ofApp::refreshSensors()
 	{
 		(*it) = (*it1);
 	}
+
+	// Sort our set of sensors, so that we can use it more efficiently in our
+	// algorithm
+	std::sort(sensors.begin(), sensors.end());
+
+	curScan = 0.0f;
+	curScanInd = 0;
+	finishedScan = 0.0f;
+	finishedScanInd = 0;
 }
 
 // Creates a new set of sensors, and refreshes the simulation
@@ -143,6 +233,17 @@ void ofApp::resetSensors()
 
 	// Finally refresh the simulation
 	refreshSensors();
+}
+
+// Draws a box to the screen based on corner coordinates
+void ofApp::drawBoxCorners(float x1, float y1, float x2, float y2)
+{
+	float w = (x2 - x1);
+	float h = (y2 - y1);
+	float x = x1 + (w / 2.0f);
+	float y = y1 + (h / 2.0f);
+
+	ofDrawBox(x, y, 0.0f, w, h, 0.0f);
 }
 
 

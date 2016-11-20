@@ -72,4 +72,12 @@ private:
 		// Return the correct visual point on the line given a value between 0-1
 		ofPoint lineInterp(float val);
 
+		// The current "scan" locations
+		int curScanInd;
+		float curScan;
+		int finishedScanInd;
+		float finishedScan;
+
+	// Draws a box on the screen given a pair of coordinates
+	void drawBoxCorners(float x1, float y1, float x2, float y2);
 };
