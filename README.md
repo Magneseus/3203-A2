@@ -2,7 +2,7 @@
 
 Members:
   - Matt Mayer  (100969802)
-  - Matt Drouin (100------)
+  - Matt Drouin (100790860)
 
 
 For running the demo:
