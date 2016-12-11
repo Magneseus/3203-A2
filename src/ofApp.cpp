@@ -9,7 +9,7 @@ void ofApp::setup() {
 	simParams.setName("Simulation Parameters");
 
 	// Setup the default parameter values
-	sensorSpeed.set("Speed", 0.2f, 0.0f, 1.0f);
+	sensorSpeed.set("Speed", 0.2f, 0.0f, 10.0f);
 	sensorNum.set("Number of Sensors", 5, 0, 100);
 	oldSensorNum = sensorNum.get();
 	sensorRange.set("Diameter", 0.1f, 0.0f, 1.0f);
@@ -60,8 +60,15 @@ void ofApp::update() {
 	// Update the simulation if it's currently running
 	if (runningSim)
 	{
+		if (checkIfComplete())
+		{
+			runningSim = false;
+			runSim.setup(runningSim);
+			std::cout << "\nTotal Movement: " << sumOfMovements << "\n\n";
+		}
+
 		int numSensors = sensors.size();
-		if (numSensors * sensorRange.get() > 1.0f && curScanInd < numSensors)
+		if (numSensors * sensorRange.get() >= 1.0f && curScanInd < numSensors)
 		{
 			/* Rigid coverage */
 
@@ -88,12 +95,16 @@ void ofApp::update() {
 				if (curScan - prevSensorRangeExtent > sensorRange.get())
 				{
 					(*iter) -= sensorSpeed * deltaTime;
+					sumOfMovements -= sensorSpeed * deltaTime;
 
 					// If we've moved far enough, stop moving and set the
 					// finishedScan marker to here
 					if ((*iter) < prevSensorRangeExtent + sensorRange.get())
 					{
 						(*iter) = prevSensorRangeExtent + sensorRange.get();
+						sumOfMovements +=
+							(prevSensorRangeExtent + sensorRange.get()) - *iter;
+
 						finishedScan = (*iter);
 						finishedScanInd = curScanInd;
 						curScanInd++;
@@ -105,12 +116,16 @@ void ofApp::update() {
 				else if (nextSensorRangeExtent - curScan > sensorRange.get())
 				{
 					(*iter) += sensorSpeed * deltaTime;
+					sumOfMovements += sensorSpeed * deltaTime;
 
 					// If we've moved too far, then switch to the next node
 					// and set the finishedScan marker to here
 					if ((*iter) > prevSensorRangeExtent + sensorRange.get())
 					{
 						(*iter) = prevSensorRangeExtent + sensorRange.get();
+						sumOfMovements +=
+							(prevSensorRangeExtent + sensorRange.get()) - *iter;
+
 						finishedScan = (*iter);
 						finishedScanInd = curScanInd;
 						curScanInd++;
@@ -122,6 +137,9 @@ void ofApp::update() {
 						(*iter) > nextSensorRangeExtent - sensorRange.get())
 					{
 						(*iter) = nextSensorRangeExtent - sensorRange.get();
+						sumOfMovements +=
+							(prevSensorRangeExtent - sensorRange.get()) - *iter;
+
 						finishedScan = (*iter);
 						finishedScanInd = curScanInd;
 						curScanInd++;
@@ -134,14 +152,13 @@ void ofApp::update() {
 				else if (scannedOnce)
 				{
 					(*iter) += sensorSpeed * deltaTime;
+					sumOfMovements += sensorSpeed * deltaTime;
 
 					// If we've surpassed a sensor, then switch places
 					if (curScanInd < numSensors - 1)
 					{
 						if ((*iter) > sensors.at(curScanInd + 1))
 						{
-							std::cout << "SWAP\n";
-
 							std::iter_swap(iter, iter + 1);
 							iter = iter + 1;
 						}
@@ -152,6 +169,9 @@ void ofApp::update() {
 					if ((*iter) > prevSensorRangeExtent + sensorRange.get())
 					{
 						(*iter) = prevSensorRangeExtent + sensorRange.get();
+						sumOfMovements +=
+							(prevSensorRangeExtent + sensorRange.get()) - *iter;
+
 						finishedScan = (*iter);
 						finishedScanInd = curScanInd;
 						curScanInd++;
@@ -173,6 +193,13 @@ void ofApp::update() {
 		{
 			curScanInd = 0;
 			scannedOnce = !scannedOnce;
+
+			if (checkIfComplete())
+			{
+				runningSim = false;
+				runSim.setup(runningSim);
+				std::cout << "\nTotal Movement: " << sumOfMovements << "\n\n";
+			}
 		}
 	} // End of if (runningSim)
 }
@@ -218,6 +245,32 @@ void ofApp::draw() {
 
 /* Custom functions */
 
+
+bool ofApp::checkIfComplete()
+{
+	if (sensors.size() * sensorRange.get() < 1.0f)
+		return false;
+
+	// check distance from beginning of line to first sensor
+	if (sensors.at(0) - sensorRange.get() / 2.0f > 0.00001f)
+		return false;
+
+	
+
+	// check all sensors in between
+	for (int i = 0; i < sensors.size() - 1; ++i)
+	{
+		if ((sensors[i + 1] - sensors[i]) - sensorRange.get() > 0.00001f)
+			return false;
+	}
+
+	// Check last sensor
+	if ((1.0f - (sensorRange.get() / 2.0f)) - sensors[sensors.size() - 1] > 0.00001f)
+		return false;
+
+	return true;
+}
+
 // Returns a point on the visual line, given a value upon that line (0-1)
 ofPoint ofApp::lineInterp(float val)
 {
@@ -252,6 +305,8 @@ void ofApp::refreshSensors()
 	curScanInd = 0;
 	finishedScan = 0.0f;
 	finishedScanInd = 0;
+	sumOfMovements = 0.0f;
+	scannedOnce = false;
 }
 
 // Creates a new set of sensors, and refreshes the simulation

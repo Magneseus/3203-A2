@@ -50,6 +50,10 @@ private:
 	float timeSinceStart;
 	float deltaTime;
 
+	// Statistic functions/vars
+	bool checkIfComplete();
+	float sumOfMovements;
+
 
 	/* Variables for the line */
 	
