@@ -12,7 +12,7 @@ void ofApp::setup() {
 	sensorSpeed.set("Speed", 0.2f, 0.0f, 1.0f);
 	sensorNum.set("Number of Sensors", 5, 0, 100);
 	oldSensorNum = sensorNum.get();
-	sensorRange.set("Range", 0.1f, 0.0f, 1.0f);
+	sensorRange.set("Diameter", 0.1f, 0.0f, 1.0f);
 	oldSensorRange = sensorRange.get();
 
 	// Setup event listeners for the panel
@@ -63,7 +63,7 @@ void ofApp::update() {
 		int numSensors = sensors.size();
 		if (numSensors * sensorRange.get() > 1.0f && curScanInd < numSensors)
 		{
-			/* Simple coverage */
+			/* Rigid coverage */
 
 			// Move the current scan position forwards until it reaches a node
 			curScan += sensorSpeed * deltaTime;
@@ -118,7 +118,8 @@ void ofApp::update() {
 
 					// If we've moved far enough, stop moving and set the
 					// finishedScan marker to here
-					if ((*iter) > nextSensorRangeExtent - sensorRange.get())
+					if (!scannedOnce && 
+						(*iter) > nextSensorRangeExtent - sensorRange.get())
 					{
 						(*iter) = nextSensorRangeExtent - sensorRange.get();
 						finishedScan = (*iter);
@@ -128,6 +129,37 @@ void ofApp::update() {
 
 					curScan = (*iter);
 				}
+				// If we've scanned once through already we need to start caring
+				// about overlaps
+				else if (scannedOnce)
+				{
+					(*iter) += sensorSpeed * deltaTime;
+
+					// If we've surpassed a sensor, then switch places
+					if (curScanInd < numSensors - 1)
+					{
+						if ((*iter) > sensors.at(curScanInd + 1))
+						{
+							std::cout << "SWAP\n";
+
+							std::iter_swap(iter, iter + 1);
+							iter = iter + 1;
+						}
+					}
+
+					// If we've moved too far, then switch to the next node
+					// and set the finishedScan marker to here
+					if ((*iter) > prevSensorRangeExtent + sensorRange.get())
+					{
+						(*iter) = prevSensorRangeExtent + sensorRange.get();
+						finishedScan = (*iter);
+						finishedScanInd = curScanInd;
+						curScanInd++;
+					}
+
+					curScan = (*iter);
+				}
+				// Otherwise everything is fine and we can continue onwards
 				else
 				{
 					finishedScan = curScan;
@@ -135,6 +167,12 @@ void ofApp::update() {
 					curScanInd++;
 				}
 			}
+		}
+		// If we've finished one scan, start again
+		else if (curScanInd >= numSensors)
+		{
+			curScanInd = 0;
+			scannedOnce = !scannedOnce;
 		}
 	} // End of if (runningSim)
 }
