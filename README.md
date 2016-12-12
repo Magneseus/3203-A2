@@ -23,7 +23,7 @@ The 32-bit version must be installed, but both 32 and 64 are included.
 Once the program is run (3203-A2.exe, in the /bin folder), you can manipulate
 the program as you like.
 
-The GUI in the upper right allows the user to modify the parameters of the
+The GUI in the upper left allows the user to modify the parameters of the
 simulation. 
 
 Under Simulation Parameters:
