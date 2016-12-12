@@ -28,9 +28,11 @@ public:
 	void sensorNumChanged(int &newSensorNum);
 	// Called when the range of the sensors is changed
 	void sensorRangeChanged(float &newSensorRange);
-	// Called when the toggle button for runSim is changed
-	void toggleRunSim(bool &newRunSim);
-
+	
+	// Called when the button for runSim is changed
+	void toggleRunSim();
+	// Called when the button for running multiple sims is changed
+	void toggleRunSimMult();
 	// Refreshes the simulation
 	void refreshSensors();
 	// Completely resets the simulation, new set of sensors
@@ -39,7 +41,6 @@ public:
 private:
 	ofPoint mousePos;
 	ofxGuiGroup gui;
-	ofxToggle runSim;
 	bool runningSim;
 
 	// Current window width and height
@@ -83,6 +84,12 @@ private:
 		float finishedScan;
 
 		bool scannedOnce;
+
+
+		// The set of movement sums
+		std::vector<float> sumOfMovementsList;
+		ofParameter<int> numSims;
+		bool runningSimMult;
 
 	// Draws a box on the screen given a pair of coordinates
 	void drawBoxCorners(float x1, float y1, float x2, float y2);

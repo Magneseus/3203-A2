@@ -9,7 +9,7 @@ void ofApp::setup() {
 	simParams.setName("Simulation Parameters");
 
 	// Setup the default parameter values
-	sensorSpeed.set("Speed", 0.2f, 0.0f, 10.0f);
+	sensorSpeed.set("Speed", 0.2f, 0.0f, 100.0f);
 	sensorNum.set("Number of Sensors", 5, 0, 100);
 	oldSensorNum = sensorNum.get();
 	sensorRange.set("Diameter", 0.1f, 0.0f, 1.0f);
@@ -31,9 +31,20 @@ void ofApp::setup() {
 	resetSensorsButton->addListener(this, &ofApp::resetSensors);
 
 	// Setup the Run button for the simulation
-	runSim.setup("Run Simulation", false);
-	runSim.addListener(this, &ofApp::toggleRunSim);
+	ofxButton* runSim = new ofxButton();
+	runSim->setup("Run Simulation");
+	runSim->addListener(this, &ofApp::toggleRunSim);
 	runningSim = false;
+
+	// Setup the Run multiple sums button
+	ofxButton* runSimMult = new ofxButton();
+	runSimMult->setup("Run Simulation MULTIPLE");
+	runSimMult->addListener(this, &ofApp::toggleRunSimMult);
+
+	// Setup the number of sims bar
+	numSims.set("Number of Simulations", 20, 1, 100);
+	runningSimMult = false;
+	
 
 	// Add all GUI elements to the main GUI group
 	simParams.add(sensorNum);
@@ -42,7 +53,9 @@ void ofApp::setup() {
 	gui.add(simParams);
 	gui.add(refreshSensorsButton);
 	gui.add(resetSensorsButton);
-	gui.add(&runSim);
+	gui.add(runSim);
+	gui.add(runSimMult);
+	gui.add(numSims);
 
 	// Change the background colour
 	ofBackground(ofColor::darkSlateGrey);
@@ -60,12 +73,7 @@ void ofApp::update() {
 	// Update the simulation if it's currently running
 	if (runningSim)
 	{
-		if (checkIfComplete())
-		{
-			runningSim = false;
-			runSim.setup(runningSim);
-			std::cout << "\nTotal Movement: " << sumOfMovements << "\n\n";
-		}
+		checkIfComplete();
 
 		int numSensors = sensors.size();
 		if (numSensors * sensorRange.get() >= 1.0f && curScanInd < numSensors)
@@ -95,37 +103,31 @@ void ofApp::update() {
 				if (curScan - prevSensorRangeExtent > sensorRange.get())
 				{
 					(*iter) -= sensorSpeed * deltaTime;
-					sumOfMovements -= sensorSpeed * deltaTime;
 
 					// If we've moved far enough, stop moving and set the
 					// finishedScan marker to here
 					if ((*iter) < prevSensorRangeExtent + sensorRange.get())
 					{
 						(*iter) = prevSensorRangeExtent + sensorRange.get();
-						sumOfMovements +=
-							(prevSensorRangeExtent + sensorRange.get()) - *iter;
 
 						finishedScan = (*iter);
 						finishedScanInd = curScanInd;
 						curScanInd++;
 					}
 
+					sumOfMovements += abs(curScan - *iter);
 					curScan = (*iter);
 				}
 				// If gap ahead, move the sensor forwards
 				else if (nextSensorRangeExtent - curScan > sensorRange.get())
 				{
 					(*iter) += sensorSpeed * deltaTime;
-					sumOfMovements += sensorSpeed * deltaTime;
 
 					// If we've moved too far, then switch to the next node
 					// and set the finishedScan marker to here
 					if ((*iter) > prevSensorRangeExtent + sensorRange.get())
 					{
 						(*iter) = prevSensorRangeExtent + sensorRange.get();
-						sumOfMovements +=
-							(prevSensorRangeExtent + sensorRange.get()) - *iter;
-
 						finishedScan = (*iter);
 						finishedScanInd = curScanInd;
 						curScanInd++;
@@ -137,14 +139,12 @@ void ofApp::update() {
 						(*iter) > nextSensorRangeExtent - sensorRange.get())
 					{
 						(*iter) = nextSensorRangeExtent - sensorRange.get();
-						sumOfMovements +=
-							(prevSensorRangeExtent - sensorRange.get()) - *iter;
-
 						finishedScan = (*iter);
 						finishedScanInd = curScanInd;
 						curScanInd++;
 					}
 
+					sumOfMovements += abs(curScan - *iter);
 					curScan = (*iter);
 				}
 				// If we've scanned once through already we need to start caring
@@ -152,7 +152,6 @@ void ofApp::update() {
 				else if (scannedOnce)
 				{
 					(*iter) += sensorSpeed * deltaTime;
-					sumOfMovements += sensorSpeed * deltaTime;
 
 					// If we've surpassed a sensor, then switch places
 					if (curScanInd < numSensors - 1)
@@ -169,14 +168,12 @@ void ofApp::update() {
 					if ((*iter) > prevSensorRangeExtent + sensorRange.get())
 					{
 						(*iter) = prevSensorRangeExtent + sensorRange.get();
-						sumOfMovements +=
-							(prevSensorRangeExtent + sensorRange.get()) - *iter;
-
 						finishedScan = (*iter);
 						finishedScanInd = curScanInd;
 						curScanInd++;
 					}
 
+					sumOfMovements += abs(curScan - *iter);
 					curScan = (*iter);
 				}
 				// Otherwise everything is fine and we can continue onwards
@@ -194,12 +191,7 @@ void ofApp::update() {
 			curScanInd = 0;
 			scannedOnce = !scannedOnce;
 
-			if (checkIfComplete())
-			{
-				runningSim = false;
-				runSim.setup(runningSim);
-				std::cout << "\nTotal Movement: " << sumOfMovements << "\n\n";
-			}
+			checkIfComplete();
 		}
 	} // End of if (runningSim)
 }
@@ -267,6 +259,49 @@ bool ofApp::checkIfComplete()
 	// Check last sensor
 	if ((1.0f - (sensorRange.get() / 2.0f)) - sensors[sensors.size() - 1] > 0.00001f)
 		return false;
+
+
+	// Stop the sim and print out the total movement
+	runningSim = false;
+	std::cout << "\nTotal Movement: " << sumOfMovements << "\n\n";
+		
+	// If we're running multiple sims
+	if (runningSimMult)
+	{
+		// Add it to the list of movements
+		sumOfMovementsList.push_back(sumOfMovements);
+
+		// If we haven't done the required number of sims, keep going
+		if (sumOfMovementsList.size() < numSims.get())
+		{
+			runningSim = true;
+			resetSensors();
+		}
+		else
+		{
+			// Otherwise stop the simulations
+			runningSim = false;
+			runningSimMult = false;
+
+			// Average all movements
+			float avgMovement = 0.0f;
+			for (int i = 0; i < sumOfMovementsList.size(); ++i)
+			{
+				avgMovement += sumOfMovementsList[i];
+			}
+			avgMovement /= sumOfMovementsList.size();
+
+			// Print that to the console
+			std::cout << "\n    Average Movement over "
+				<< sumOfMovementsList.size()
+				<< " sims: "
+				<< avgMovement
+				<< "\n\n";
+
+			// Clear the list for future sims
+			sumOfMovementsList.clear();
+		}
+	}
 
 	return true;
 }
@@ -394,12 +429,21 @@ void ofApp::sensorRangeChanged(float &newSensorRange)
 	oldSensorRange = newSensorRange;
 }
 
-// Called when the toggle button for runSim is changed
-void ofApp::toggleRunSim(bool &newRunSim)
+// Called when the button for runSim is changed
+void ofApp::toggleRunSim()
 {
-	runningSim = newRunSim;
+	runningSim = true;
+	
+	refreshSensors();
 }
 
+void ofApp::toggleRunSimMult()
+{
+	runningSimMult = true;
+	runningSim = true;
+
+	refreshSensors();
+}
 
 
 
