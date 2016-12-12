@@ -27,6 +27,7 @@ The GUI in the upper right allows the user to modify the parameters of the
 simulation. 
 
 Under Simulation Parameters:
+
 	Number of Sensors - allows you to change the number of sensors (0-100), 
 						represented by the white dots
 	
@@ -37,8 +38,10 @@ Under Simulation Parameters:
 			multiple simulations.
 
 Other Parameters:
+
 	Refresh - resets the sensors to their original positions (the positions
 			  from the last time Reset was called)
+			  
 	Reset - resets the sensors and chooses new random initial positions
 	
 	Run Simulation - this will run the simulation once, until the area is under
