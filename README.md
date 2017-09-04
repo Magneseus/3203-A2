@@ -1,8 +1,10 @@
-# 3203 Assignment 2
+# Sensor Coverage Testing
+
+![](https://i.gyazo.com/d477c55979f3647e6353cdb6aea1d993.gif)
 
 Members:
- - Matt Mayer  (100969802)
- - Matt Drouin (100790860)
+- Matt Mayer
+- Matt Drouin
 
 
 # Installation
